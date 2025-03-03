@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>GitLab Pipeline Stats</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .form-container {
+            margin: 20px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .form-group {
+            margin: 10px 0;
+        }
+        label {
+            display: inline-block;
+            width: 120px;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h2>Pipeline Analysis Configuration</h2>
+        <div class="form-group">
+            <label for="project_id">GitLab Project ID:</label>
+            <input type="text" id="project_id" placeholder="12345678" required>
+        </div>
+        <div class="form-group">
+            <label for="access_token">GitLab Access Token:</label>
+            <input type="password" id="access_token" placeholder="GitLab Access Token" required>
+        </div>
+        <div class="form-group">
+            <label for="days">Days to Analyze:</label>
+            <input type="number" id="days" value="7" min="1" max="31">
+        </div>
+        <div class="form-group">
+            <label for="max_pages">Max Pages:</label>
+            <input type="number" id="max_pages" value="100" min="1">
+        </div>
+        <button onclick="fetchData()">Analyze Pipelines</button>
+    </div>
+
+    <canvas id="jobChart"></canvas>
+
+    <script>
+        let chart;
+
+        function fetchData() {
+            const projectId = document.getElementById('project_id').value;
+            const accessToken = document.getElementById('access_token').value;
+            const days = document.getElementById('days').value;
+            const maxPages = document.getElementById('max_pages').value;
+
+            const url = `/api/job-stats?project_id=${projectId}&access_token=${accessToken}&days=${days}&max_pages=${maxPages}`;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (chart) {
+                        chart.destroy();
+                    }
+
+                    const ctx = document.getElementById('jobChart').getContext('2d');
+                    chart = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: data.averages.labels,
+                            datasets: [{
+                                label: 'Average Execution Time (seconds)',
+                                data: data.averages.values,
+                                backgroundColor: 'rgba(54, 162, 235, 0.5)'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            scales: {
+                                y: {
+                                    beginAtZero: true
+                                }
+                            }
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error fetching data. Check console for details.');
+                });
+        }
+    </script>
+</body>
+</html>
